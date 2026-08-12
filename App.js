@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,10 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [moedas, setMoedas] = useState([])
   const [moedaSelecionada, setMoedaSelecionada] = useState(null)
+  const [moedaBValor, setMoedaBValor] = useState('')
+
+  const [valorMoeda, setValorMoeda] = useState(null)
+  const [valorConvertido, setValorConvertido] = useState(0)
 
   useEffect(() => {
     async function loadMoedas() {
@@ -37,6 +42,28 @@ export default function App() {
 
     loadMoedas()
   }, [])
+
+  async function converter() {
+    if (moedaBValor === 0 || moedaBValor === '' || moedaSelecionada === null) {
+      return
+    }
+
+    const response = await api.get(`/all/${moedaSelecionada}-BRL`)
+    //console.log(response.data[moedaSelecionada].ask)
+
+    let resultado = (
+      parseFloat(response.data[moedaSelecionada].ask) * parseFloat(moedaBValor)
+    ).toFixed(2)
+
+    setValorConvertido(
+      `${resultado.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      })}`
+    )
+    setValorMoeda(moedaBValor)
+    Keyboard.dismiss()
+  }
 
   if (loading) {
     return (
@@ -64,12 +91,25 @@ export default function App() {
           placeholder="Ex: 1.50"
           style={styles.input}
           keyboardType="numeric"
+          value={moedaBValor}
+          onChangeText={valor => setMoedaBValor(valor)}
         />
       </View>
 
-      <TouchableOpacity style={styles.areaBotao}>
+      <TouchableOpacity style={styles.areaBotao} onPress={converter}>
         <Text style={styles.botaoText}>Converter</Text>
       </TouchableOpacity>
+
+      {valorConvertido !== 0 && (
+        <View style={styles.areaResultado}>
+          <Text style={styles.valorConvertido}>
+            {' '}
+            {valorMoeda} {moedaSelecionada}{' '}
+          </Text>
+          <Text style={{ fontSize: 18, margin: 8 }}>corresponde a </Text>
+          <Text style={styles.valorConvertido}>{valorConvertido}</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -116,13 +156,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#fb4b57',
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    padding: 8,
-    marginTop: 1
+    padding: 8
   },
   botaoText: {
     color: '#000',
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: 'bold',
     textAlign: 'center'
+  },
+  areaResultado: {
+    width: '90%',
+    marginTop: 34,
+    padding: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff'
+  },
+  valorConvertido: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#000'
   }
 })
